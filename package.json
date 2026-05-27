@@ -2,7 +2,10 @@
   "name": "cryptohashes",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@10.33.4",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,12 +17,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pages:dev": "pnpm build && wrangler pages dev dist",
-    "pages:deploy": "pnpm build && wrangler pages deploy dist --project-name cryptohashes",
-    "pages:deploy:preview": "pnpm build && wrangler pages deploy dist --project-name cryptohashes --branch preview",
-    "deploy": "pnpm pages:deploy",
-    "workers:dev": "pnpm build && wrangler dev --config wrangler.workers.toml",
-    "workers:deploy": "pnpm build && wrangler deploy --config wrangler.workers.toml"
+    "pages:dev": "pnpm build && wrangler pages dev",
+    "pages:deploy": "pnpm build && wrangler pages deploy",
+    "pages:deploy:preview": "pnpm build && wrangler pages deploy --branch preview",
+    "deploy": "pnpm pages:deploy"
   },
   "dependencies": {
     "hash-wasm": "4.12.0"
