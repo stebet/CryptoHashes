@@ -17,9 +17,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pages:dev": "pnpm build && wrangler pages dev",
-    "pages:deploy": "pnpm build && wrangler pages deploy",
-    "pages:deploy:preview": "pnpm build && wrangler pages deploy --branch preview",
+    "pages:dev": "pnpm build && wrangler pages dev ./dist",
+    "pages:deploy": "pnpm build && wrangler pages deploy ./dist --project-name cryptohashes",
+    "pages:deploy:preview": "pnpm build && wrangler pages deploy ./dist --project-name cryptohashes --branch preview",
     "deploy": "pnpm pages:deploy"
   },
   "dependencies": {
