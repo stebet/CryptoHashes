@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Pages Git builds read Node from .node-version; keep PNPM_VERSION=11.3.0 set in Cloudflare.
+  "name": "cryptohashes",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-05-27"
+}

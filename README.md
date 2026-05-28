@@ -1,33 +1,34 @@
 # CryptoHashes
 
-## Cloudflare Pages dashboard setup
+## Deployment
 
-Use Cloudflare Pages **Git integration** for `stebet/CryptoHashes`.
+Production deploys run from `.github/workflows/deploy-pages.yml` on pushes to `master`.
+The workflow uploads the built `dist` directory to the Cloudflare Pages project
+`cryptohashes`.
 
-1. In Cloudflare, go to **Workers & Pages** and create a new Pages project from Git.
-2. Select this repository.
-3. Configure the project with these dashboard values, then select **Save and Deploy**:
+### GitHub configuration
 
-| Setting | Value |
-| --- | --- |
-| Project name | `cryptohashes` |
-| Production branch | `master` |
-| Build command | `pnpm build` |
-| Build output directory | `dist` |
-| Root directory | repo root (`/`) |
+Add these repository settings before relying on the deploy workflow:
 
-### Version pinning
+| Type | Name | Value |
+| --- | --- | --- |
+| Secret | `CLOUDFLARE_API_KEY` | Cloudflare API token with Pages edit access |
+| Variable | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID for the `cryptohashes` Pages project |
 
-- Node is pinned by `.node-version`, currently `20.19.0`.
-- In **Settings** -> **Environment variables**, set `PNPM_VERSION=11.3.0` for both Production and Preview so Pages uses the repo's pinned pnpm version.
+The workflow uses:
 
-### Custom domain
+- Node from `.node-version` (`20.19.0`)
+- pnpm `11.3.0`
+- `pnpm test`
+- `pnpm build`
+- `wrangler pages deploy ./dist --project-name=cryptohashes`
 
-After the first successful deploy:
+### Cloudflare Pages project
 
-1. Open the `cryptohashes` Pages project.
-2. Go to **Custom domains** -> **Set up a domain**.
-3. Add `hashes.stebet.net`.
-4. Because `stebet.net` is already managed in the same Cloudflare account, let Cloudflare create and verify the DNS record automatically.
-
-Once the domain shows as active, production traffic for `master` should serve from `https://hashes.stebet.net`.
+- Keep the Pages project named `cryptohashes`.
+- Keep the project as a **Direct Upload** project when using the GitHub Actions
+  workflow. Enabling Cloudflare Git integration as well can create duplicate
+  deployments.
+- `hashes.stebet.net` is the production custom domain. Because `stebet.net` is
+  managed in the same Cloudflare account, DNS can be managed from the Pages
+  project.
