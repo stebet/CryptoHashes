@@ -6,6 +6,8 @@ on:
       - master
 
 permissions:
+  actions: read
+  checks: write
   contents: read
   deployments: write
 
@@ -29,13 +31,69 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run tests with coverage
+        id: test
+        run: pnpm test:ci
+        continue-on-error: true
+
+      - name: Publish test results
+        if: ${{ !cancelled() && hashFiles('test-results/vitest.junit.xml') != '' }}
+        uses: dorny/test-reporter@v3
+        with:
+          name: Vitest Tests
+          path: test-results/vitest.junit.xml
+          reporter: java-junit
+          fail-on-error: false
+          use-actions-summary: true
+
+      - name: Publish coverage summary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          echo "### Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Coverage summary was not generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node <<'EOF'
+          const fs = require('node:fs');
+          const summary = JSON.parse(
+            fs.readFileSync('coverage/coverage-summary.json', 'utf8'),
+          ).total;
+          const formatMetric = (metric) =>
+            `${metric.pct}% (${metric.covered}/${metric.total})`;
+          const lines = [
+            '',
+            '| Metric | Coverage |',
+            '| --- | --- |',
+            `| Lines | ${formatMetric(summary.lines)} |`,
+            `| Statements | ${formatMetric(summary.statements)} |`,
+            `| Functions | ${formatMetric(summary.functions)} |`,
+            `| Branches | ${formatMetric(summary.branches)} |`,
+          ];
+          fs.appendFileSync(
+            process.env.GITHUB_STEP_SUMMARY,
+            `${lines.join('\n')}\n`,
+          );
+          EOF
+
+      - name: Upload test and coverage artifacts
+        if: ${{ !cancelled() && hashFiles('test-results/**', 'coverage/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-reports
+          if-no-files-found: warn
+          path: |
+            test-results/**
+            coverage/**
 
       - name: Build site
+        if: steps.test.outcome == 'success'
         run: pnpm build
 
       - name: Check Cloudflare configuration
+        if: steps.test.outcome == 'success'
         run: |
           test -n "${{ secrets.CLOUDFLARE_API_KEY }}" || {
             echo "Missing GitHub secret CLOUDFLARE_API_KEY.";
@@ -47,6 +105,7 @@ jobs:
           }
 
       - name: Deploy to Cloudflare Pages
+        if: steps.test.outcome == 'success'
         id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
@@ -55,3 +114,7 @@ jobs:
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           packageManager: pnpm
           command: pages deploy ./dist --project-name=cryptohashes
+
+      - name: Fail workflow if tests failed
+        if: steps.test.outcome != 'success'
+        run: exit 1

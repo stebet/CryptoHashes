@@ -8,6 +8,20 @@
       name="description"
       content="CryptoHashes is a client-only hashing tool for MD5, NTLM, SHA, bcrypt, and Argon2 generation plus verification."
     />
+    <script>
+      (() => {
+        const key = 'cryptohashes:theme';
+        const storedPreference = window.localStorage.getItem(key);
+        const theme =
+          storedPreference === 'light' || storedPreference === 'dark'
+            ? storedPreference
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <title>CryptoHashes</title>
   </head>
   <body>

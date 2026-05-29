@@ -1,20 +1,76 @@
 :root {
-  color-scheme: dark;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
   line-height: 1.45;
   font-weight: 400;
-  color: #e5e7eb;
-  background: #020617;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e5e7eb;
+  background: #020617;
+  --page-background: #020617;
   --border: rgba(148, 163, 184, 0.18);
   --surface: rgba(15, 23, 42, 0.68);
   --surface-strong: rgba(15, 23, 42, 0.9);
+  --surface-hover: rgba(148, 163, 184, 0.12);
   --text-muted: #94a3b8;
+  --toggle-thumb-background: #334155;
+  --toggle-thumb-border: rgba(148, 163, 184, 0.34);
+  --toggle-thumb-shadow: 0 3px 10px rgba(2, 6, 23, 0.34);
+  --meta-pill-text: #dbeafe;
+  --result-surface: rgba(15, 23, 42, 0.5);
+  --result-text: #e0f2fe;
+  --focus-ring: rgba(56, 189, 248, 0.4);
+  --info-background: rgba(56, 189, 248, 0.08);
+  --info-border: rgba(56, 189, 248, 0.16);
+  --info-text: #d8f4ff;
+  --warning-background: rgba(251, 191, 36, 0.08);
+  --warning-border: rgba(251, 191, 36, 0.16);
+  --warning-text: #fde68a;
+  --error-background: rgba(248, 113, 113, 0.08);
+  --error-border: rgba(248, 113, 113, 0.16);
+  --error-text: #fecaca;
+  --success-background: rgba(52, 211, 153, 0.08);
+  --success-border: rgba(52, 211, 153, 0.16);
+  --success-text: #bbf7d0;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  color: #0f172a;
+  background: #f8fafc;
+  --page-background: #f8fafc;
+  --border: rgba(71, 85, 105, 0.2);
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.94);
+  --surface-hover: rgba(15, 23, 42, 0.06);
+  --text-muted: #475569;
+  --toggle-thumb-background: #dbeafe;
+  --toggle-thumb-border: rgba(96, 165, 250, 0.24);
+  --toggle-thumb-shadow: 0 3px 10px rgba(15, 23, 42, 0.12);
+  --meta-pill-text: #1e293b;
+  --result-surface: #e2e8f0;
+  --result-text: #0f172a;
+  --focus-ring: rgba(14, 165, 233, 0.35);
+  --info-background: rgba(56, 189, 248, 0.12);
+  --info-border: rgba(56, 189, 248, 0.22);
+  --info-text: #075985;
+  --warning-background: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.24);
+  --warning-text: #92400e;
+  --error-background: rgba(248, 113, 113, 0.12);
+  --error-border: rgba(248, 113, 113, 0.22);
+  --error-text: #991b1b;
+  --success-background: rgba(52, 211, 153, 0.12);
+  --success-border: rgba(52, 211, 153, 0.2);
+  --success-text: #166534;
 }
 
 * {
@@ -25,6 +81,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--page-background);
+  color: inherit;
 }
 
 button,
@@ -61,6 +119,79 @@ code {
   margin-bottom: 1rem;
 }
 
+.app-header__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.theme-toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.theme-toggle__track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: center;
+  justify-items: center;
+  width: 4.5rem;
+  height: 2.4rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.theme-toggle__icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.theme-toggle__icon svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.theme-toggle__thumb {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--toggle-thumb-border);
+  border-radius: 999px;
+  background: var(--toggle-thumb-background);
+  box-shadow: var(--toggle-thumb-shadow);
+  transition: transform 160ms ease;
+}
+
+.theme-toggle[data-theme="light"] .theme-toggle__icon--sun,
+.theme-toggle[data-theme="dark"] .theme-toggle__icon--moon {
+  color: inherit;
+}
+
+.theme-toggle[data-theme="dark"] .theme-toggle__thumb {
+  transform: translateX(2rem);
+}
+
 .app-header h1 {
   margin: 0;
   font-size: clamp(1.9rem, 4vw, 2.6rem);
@@ -94,7 +225,7 @@ code {
 }
 
 .input-field__control:focus {
-  outline: 2px solid rgba(56, 189, 248, 0.4);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -111,7 +242,7 @@ code {
   padding: 0.35rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  color: #dbeafe;
+  color: var(--meta-pill-text);
   background: var(--surface);
   font-size: 0.9rem;
 }
@@ -139,8 +270,8 @@ code {
   min-width: 0;
   padding: 0.45rem 0.6rem;
   border-radius: 0.65rem;
-  background: rgba(15, 23, 42, 0.5);
-  color: #e0f2fe;
+  background: var(--result-surface);
+  color: var(--result-text);
   font-size: 0.85rem;
   overflow-wrap: anywhere;
   white-space: normal;
@@ -152,6 +283,10 @@ code {
   padding: 0.65rem 0.9rem;
   background: var(--surface);
   color: inherit;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--surface-hover);
 }
 
 .button:disabled {
@@ -176,27 +311,27 @@ code {
 }
 
 .notice--info {
-  background: rgba(56, 189, 248, 0.08);
-  border-color: rgba(56, 189, 248, 0.16);
-  color: #d8f4ff;
+  background: var(--info-background);
+  border-color: var(--info-border);
+  color: var(--info-text);
 }
 
 .notice--warning {
-  background: rgba(251, 191, 36, 0.08);
-  border-color: rgba(251, 191, 36, 0.16);
-  color: #fde68a;
+  background: var(--warning-background);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
 }
 
 .notice--error {
-  background: rgba(248, 113, 113, 0.08);
-  border-color: rgba(248, 113, 113, 0.16);
-  color: #fecaca;
+  background: var(--error-background);
+  border-color: var(--error-border);
+  color: var(--error-text);
 }
 
 .notice--success {
-  background: rgba(52, 211, 153, 0.08);
-  border-color: rgba(52, 211, 153, 0.16);
-  color: #bbf7d0;
+  background: var(--success-background);
+  border-color: var(--success-border);
+  color: var(--success-text);
 }
 
 .stack-sm {
@@ -242,6 +377,15 @@ code {
   .app-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .app-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .theme-toggle {
+    align-self: center;
   }
 
   .result-row {

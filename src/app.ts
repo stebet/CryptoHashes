@@ -13,6 +13,10 @@ const DETERMINISTIC_ALGORITHMS = [
 }[];
 
 const encoder = new TextEncoder();
+const THEME_STORAGE_KEY = 'cryptohashes:theme';
+const SYSTEM_THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
+
+let disposeSystemThemeChangeListener: (() => void) | undefined;
 
 interface DeterministicState {
   loading: boolean;
@@ -20,7 +24,19 @@ interface DeterministicState {
   results: Partial<Record<DeterministicAlgorithm, string>>;
 }
 
+type Theme = 'dark' | 'light';
+type ThemePreference = Theme | 'system';
+
+interface ThemeState {
+  preference: ThemePreference;
+  effectiveTheme: Theme;
+}
+
 export function renderApp(container: HTMLElement): void {
+  disposeSystemThemeChangeListener?.();
+
+  const themePreference = getStoredThemePreference();
+
   container.innerHTML = `
     <main class="app-shell">
       <header class="app-header">
@@ -28,9 +44,34 @@ export function renderApp(container: HTMLElement): void {
           <h1>CryptoHashes</h1>
           <p class="app-subtitle">MD5 · NTLM · SHA1 · SHA-256 · SHA-512</p>
         </div>
-        <button id="clear-input" type="button" class="button button--ghost">
-          Clear
-        </button>
+        <div class="app-header__actions">
+          <button
+            id="theme-toggle"
+            type="button"
+            class="theme-toggle"
+            aria-label=""
+            aria-pressed="false"
+          >
+            <span class="theme-toggle__track" aria-hidden="true">
+              <span class="theme-toggle__icon theme-toggle__icon--sun">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <circle cx="12" cy="12" r="4"></circle>
+                  <path
+                    d="M12 2.75v2.5M12 18.75v2.5M21.25 12h-2.5M5.25 12H2.75M18.54 5.46l-1.77 1.77M7.23 16.77l-1.77 1.77M18.54 18.54l-1.77-1.77M7.23 7.23L5.46 5.46"
+                  ></path>
+                </svg>
+              </span>
+              <span class="theme-toggle__icon theme-toggle__icon--moon">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path
+                    d="M20 15.5A8.5 8.5 0 1 1 12.5 4a6.5 6.5 0 0 0 7.5 11.5Z"
+                  ></path>
+                </svg>
+              </span>
+              <span class="theme-toggle__thumb"></span>
+            </span>
+          </button>
+        </div>
       </header>
 
       <label class="input-field">
@@ -59,19 +100,29 @@ export function renderApp(container: HTMLElement): void {
     </main>
   `;
 
-  const state: { input: string; deterministic: DeterministicState } = {
+  const state: {
+    input: string;
+    deterministic: DeterministicState;
+    theme: ThemeState;
+  } = {
     input: '',
     deterministic: {
       loading: false,
       results: {},
     },
+    theme: {
+      preference: themePreference,
+      effectiveTheme: resolveTheme(themePreference),
+    },
   };
+
+  applyTheme(state.theme.effectiveTheme);
 
   const refs = {
     input: getRequiredElement<HTMLTextAreaElement>(container, '#hash-input'),
-    clearInput: getRequiredElement<HTMLButtonElement>(
+    themeToggle: getRequiredElement<HTMLButtonElement>(
       container,
-      '#clear-input',
+      '#theme-toggle',
     ),
     charCount: getRequiredElement<HTMLElement>(container, '#char-count'),
     byteCount: getRequiredElement<HTMLElement>(container, '#byte-count'),
@@ -96,10 +147,15 @@ export function renderApp(container: HTMLElement): void {
     scheduleRefresh();
   });
 
-  refs.clearInput.addEventListener('click', () => {
-    refs.input.value = '';
-    refs.input.dispatchEvent(new Event('input'));
-    refs.input.focus();
+  refs.themeToggle.addEventListener('click', () => {
+    const nextTheme: Theme =
+      state.theme.effectiveTheme === 'dark' ? 'light' : 'dark';
+
+    state.theme.preference = nextTheme;
+    state.theme.effectiveTheme = nextTheme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    applyTheme(nextTheme);
+    renderThemeToggle();
   });
 
   container.addEventListener('click', (event) => {
@@ -118,8 +174,18 @@ export function renderApp(container: HTMLElement): void {
   });
 
   renderInputMeta();
+  renderThemeToggle();
   renderDeterministicStatus();
   renderDeterministicRows();
+  disposeSystemThemeChangeListener = subscribeToSystemThemeChange(() => {
+    if (state.theme.preference !== 'system') {
+      return;
+    }
+
+    state.theme.effectiveTheme = resolveTheme('system');
+    applyTheme(state.theme.effectiveTheme);
+    renderThemeToggle();
+  });
   scheduleRefresh();
   queueMicrotask(() => {
     refs.input.focus();
@@ -179,6 +245,22 @@ export function renderApp(container: HTMLElement): void {
 
     refs.charCount.textContent = formatCount(state.input.length, 'character');
     refs.byteCount.textContent = formatCount(byteLength, 'UTF-8 byte');
+  }
+
+  function renderThemeToggle(): void {
+    refs.themeToggle.dataset.theme = state.theme.effectiveTheme;
+    refs.themeToggle.title = formatThemeLabel(
+      state.theme.preference,
+      state.theme.effectiveTheme,
+    );
+    refs.themeToggle.setAttribute(
+      'aria-label',
+      `Switch to ${state.theme.effectiveTheme === 'dark' ? 'light' : 'dark'} theme`,
+    );
+    refs.themeToggle.setAttribute(
+      'aria-pressed',
+      String(state.theme.effectiveTheme === 'dark'),
+    );
   }
 
   function renderDeterministicStatus(): void {
@@ -311,4 +393,74 @@ function getErrorMessage(error: unknown): string {
   }
 
   return 'Something went wrong.';
+}
+
+function getStoredThemePreference(): ThemePreference {
+  const storedPreference = window.localStorage.getItem(THEME_STORAGE_KEY);
+
+  if (storedPreference === 'light' || storedPreference === 'dark') {
+    return storedPreference;
+  }
+
+  return 'system';
+}
+
+function resolveTheme(preference: ThemePreference): Theme {
+  if (preference !== 'system') {
+    return preference;
+  }
+
+  return getSystemTheme();
+}
+
+function getSystemTheme(): Theme {
+  if (typeof window.matchMedia !== 'function') {
+    return 'light';
+  }
+
+  return window.matchMedia(SYSTEM_THEME_MEDIA_QUERY).matches ? 'dark' : 'light';
+}
+
+function subscribeToSystemThemeChange(onChange: () => void): () => void {
+  if (typeof window.matchMedia !== 'function') {
+    return () => {};
+  }
+
+  const mediaQuery = window.matchMedia(SYSTEM_THEME_MEDIA_QUERY);
+  const listener = () => {
+    onChange();
+  };
+
+  if (typeof mediaQuery.addEventListener === 'function') {
+    mediaQuery.addEventListener('change', listener);
+
+    return () => {
+      mediaQuery.removeEventListener('change', listener);
+    };
+  }
+
+  mediaQuery.addListener(listener);
+
+  return () => {
+    mediaQuery.removeListener(listener);
+  };
+}
+
+function applyTheme(theme: Theme): void {
+  document.documentElement.dataset.theme = theme;
+}
+
+function formatThemeLabel(
+  preference: ThemePreference,
+  effectiveTheme: Theme,
+): string {
+  if (preference === 'system') {
+    return `Theme: System (${capitalizeTheme(effectiveTheme)})`;
+  }
+
+  return `Theme: ${capitalizeTheme(effectiveTheme)}`;
+}
+
+function capitalizeTheme(theme: Theme): string {
+  return `${theme[0].toUpperCase()}${theme.slice(1)}`;
 }

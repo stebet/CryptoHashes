@@ -32,6 +32,26 @@ describe('renderApp', () => {
     );
   });
 
+  it('uses the system theme by default and follows system theme changes', async () => {
+    const systemTheme = mockSystemTheme('dark');
+
+    renderWorkspace();
+
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+    expect(
+      screen.getByRole('button', { name: 'Switch to light theme' }),
+    ).toHaveAttribute('title', 'Theme: System (Dark)');
+
+    systemTheme.setTheme('light');
+
+    await waitFor(() => {
+      expect(document.documentElement).toHaveAttribute('data-theme', 'light');
+      expect(
+        screen.getByRole('button', { name: 'Switch to dark theme' }),
+      ).toHaveAttribute('title', 'Theme: System (Light)');
+    });
+  });
+
   it('updates deterministic digests and copies digest values', async () => {
     const { user, input } = renderWorkspace();
 
@@ -52,20 +72,24 @@ describe('renderApp', () => {
     expect(await screen.findByText('MD5 digest copied.')).toBeInTheDocument();
   });
 
-  it('clears the input and recomputes the deterministic rows', async () => {
-    const { user, input } = renderWorkspace();
+  it('persists an explicit theme override and ignores later system changes', async () => {
+    const systemTheme = mockSystemTheme('light');
+    const { user } = renderWorkspace();
 
-    await user.type(input, 'abc');
-    expect(await screen.findByText('sha256:abc')).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'Switch to dark theme' }),
+    );
 
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+    expect(window.localStorage.getItem('cryptohashes:theme')).toBe('dark');
+    expect(
+      screen.getByRole('button', { name: 'Switch to light theme' }),
+    ).toHaveAttribute('title', 'Theme: Dark');
+
+    systemTheme.setTheme('light');
 
     await waitFor(() => {
-      expect(input).toHaveValue('');
-      expect(engineMocks.generateDeterministicHash).toHaveBeenLastCalledWith({
-        algorithm: 'sha512',
-        input: '',
-      });
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     });
   });
 });
@@ -88,5 +112,60 @@ function renderWorkspace() {
   return {
     user: userEvent.setup(),
     input,
+  };
+}
+
+function mockSystemTheme(initialTheme: 'dark' | 'light') {
+  let currentTheme = initialTheme;
+  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      get matches() {
+        return currentTheme === 'dark';
+      },
+      media: query,
+      onchange: null,
+      addEventListener: (
+        eventName: string,
+        listener: (event: MediaQueryListEvent) => void,
+      ) => {
+        if (eventName === 'change') {
+          listeners.add(listener);
+        }
+      },
+      removeEventListener: (
+        eventName: string,
+        listener: (event: MediaQueryListEvent) => void,
+      ) => {
+        if (eventName === 'change') {
+          listeners.delete(listener);
+        }
+      },
+      addListener: (listener: (event: MediaQueryListEvent) => void) => {
+        listeners.add(listener);
+      },
+      removeListener: (listener: (event: MediaQueryListEvent) => void) => {
+        listeners.delete(listener);
+      },
+      dispatchEvent: () => true,
+    })),
+  });
+
+  return {
+    setTheme(nextTheme: 'dark' | 'light') {
+      currentTheme = nextTheme;
+
+      const event = {
+        matches: nextTheme === 'dark',
+        media: '(prefers-color-scheme: dark)',
+      } as MediaQueryListEvent;
+
+      for (const listener of listeners) {
+        listener(event);
+      }
+    },
   };
 }
