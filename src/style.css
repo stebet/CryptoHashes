@@ -252,6 +252,41 @@ code {
   border-top: 1px solid var(--border);
 }
 
+.app-footer {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  color: inherit;
+}
+
+.icon-link:hover {
+  background: var(--surface-hover);
+}
+
+.icon-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.icon-link svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: currentColor;
+}
+
 .result-row {
   display: grid;
   grid-template-columns: 6rem minmax(0, 1fr) auto;
@@ -386,6 +421,10 @@ code {
 
   .theme-toggle {
     align-self: center;
+  }
+
+  .app-footer {
+    justify-content: center;
   }
 
   .result-row {

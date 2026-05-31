@@ -92,6 +92,20 @@ describe('renderApp', () => {
       expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     });
   });
+
+  it('renders clickable footer links for X and GitHub', async () => {
+    renderWorkspace();
+
+    await screen.findByText('md5:');
+
+    expect(screen.getByRole('link', { name: 'X profile' })).toHaveAttribute(
+      'href',
+      'https://x.com/stebets',
+    );
+    expect(
+      screen.getByRole('link', { name: 'GitHub repository' }),
+    ).toHaveAttribute('href', 'https://github.com/stebet/CryptoHashes');
+  });
 });
 
 function renderWorkspace() {
