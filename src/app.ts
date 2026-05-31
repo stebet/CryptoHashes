@@ -273,7 +273,6 @@ export function renderApp(container: HTMLElement): void {
   function scheduleRefresh(): void {
     state.deterministic.loading = true;
     state.deterministic.error = undefined;
-    pwnedRequestToken += 1;
     state.pwned.loading = state.input.length > 0;
     state.pwned.error = undefined;
     state.pwned.prevalence = 0;
@@ -519,8 +518,8 @@ export function renderApp(container: HTMLElement): void {
       return;
     }
 
-    const requestToken = pwnedRequestToken + 1;
-    pwnedRequestToken = requestToken;
+    const requestToken = ++pwnedRequestToken;
+    const inputAtRequest = state.input;
     state.pwned.loading = true;
     state.pwned.error = undefined;
     renderPwnedStatus();
@@ -531,17 +530,23 @@ export function renderApp(container: HTMLElement): void {
         fetchPwnedRangeCount(ntlmDigest, 'ntlm'),
       ]);
 
-      if (requestToken !== pwnedRequestToken) {
+      if (
+        requestToken !== pwnedRequestToken ||
+        inputAtRequest !== state.input
+      ) {
         return;
       }
 
       state.pwned.loading = false;
       state.pwned.error = undefined;
-      state.pwned.prevalence = Math.max(sha1Result.count, ntlmResult.count);
+      state.pwned.prevalence = sha1Result.count;
       state.pwned.sha1Prefix = sha1Result.prefix;
       state.pwned.ntlmPrefix = ntlmResult.prefix;
     } catch {
-      if (requestToken !== pwnedRequestToken) {
+      if (
+        requestToken !== pwnedRequestToken ||
+        inputAtRequest !== state.input
+      ) {
         return;
       }
 
@@ -626,7 +631,7 @@ function parsePwnedRangeCount(
 
     const separatorIndex = line.indexOf(':');
 
-    if (separatorIndex <= 0) {
+    if (separatorIndex < 0) {
       continue;
     }
 
