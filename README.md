@@ -40,5 +40,3 @@ The workflow uses:
   - `pnpm typecheck`
   - `pnpm test`
   - `pnpm build`
-- Keep `tsconfig.json` configured for React + TypeScript (`"jsx": "react-jsx"`
-  and Node typings in `"types"`/`"typeRoots"`).
