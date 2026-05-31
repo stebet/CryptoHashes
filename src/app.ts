@@ -15,6 +15,7 @@ const DETERMINISTIC_ALGORITHMS = [
 const encoder = new TextEncoder();
 const THEME_STORAGE_KEY = 'cryptohashes:theme';
 const SYSTEM_THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
+const PWNED_PASSWORDS_RANGE_API = 'https://api.pwnedpasswords.com/range/';
 
 let disposeSystemThemeChangeListener: (() => void) | undefined;
 
@@ -22,6 +23,14 @@ interface DeterministicState {
   loading: boolean;
   error?: string;
   results: Partial<Record<DeterministicAlgorithm, string>>;
+}
+
+interface PwnedState {
+  loading: boolean;
+  error?: string;
+  prevalence: number;
+  sha1Prefix?: string;
+  ntlmPrefix?: string;
 }
 
 type Theme = 'dark' | 'light';
@@ -91,6 +100,29 @@ export function renderApp(container: HTMLElement): void {
       <div class="meta-row" aria-label="Input statistics">
         <span id="char-count" class="meta-pill">0 characters</span>
         <span id="byte-count" class="meta-pill">0 UTF-8 bytes</span>
+        <span id="pwned-status" class="meta-pill meta-pill--neutral">
+          Pwned: enter text to check
+        </span>
+        <a
+          id="pwned-sha1-range"
+          class="meta-link"
+          href="#"
+          target="_blank"
+          rel="noreferrer noopener"
+          hidden
+        >
+          SHA1 range
+        </a>
+        <a
+          id="pwned-ntlm-range"
+          class="meta-link"
+          href="#"
+          target="_blank"
+          rel="noreferrer noopener"
+          hidden
+        >
+          NTLM range
+        </a>
       </div>
 
       <div id="deterministic-status" class="stack-sm" aria-live="polite"></div>
@@ -134,12 +166,17 @@ export function renderApp(container: HTMLElement): void {
   const state: {
     input: string;
     deterministic: DeterministicState;
+    pwned: PwnedState;
     theme: ThemeState;
   } = {
     input: '',
     deterministic: {
       loading: false,
       results: {},
+    },
+    pwned: {
+      loading: false,
+      prevalence: 0,
     },
     theme: {
       preference: themePreference,
@@ -157,6 +194,15 @@ export function renderApp(container: HTMLElement): void {
     ),
     charCount: getRequiredElement<HTMLElement>(container, '#char-count'),
     byteCount: getRequiredElement<HTMLElement>(container, '#byte-count'),
+    pwnedStatus: getRequiredElement<HTMLElement>(container, '#pwned-status'),
+    pwnedSha1Range: getRequiredElement<HTMLAnchorElement>(
+      container,
+      '#pwned-sha1-range',
+    ),
+    pwnedNtlmRange: getRequiredElement<HTMLAnchorElement>(
+      container,
+      '#pwned-ntlm-range',
+    ),
     deterministicStatus: getRequiredElement<HTMLElement>(
       container,
       '#deterministic-status',
@@ -170,6 +216,7 @@ export function renderApp(container: HTMLElement): void {
 
   let deterministicTimeout = 0;
   let deterministicRequestToken = 0;
+  let pwnedRequestToken = 0;
   let toastTimeout = 0;
 
   refs.input.addEventListener('input', () => {
@@ -208,6 +255,7 @@ export function renderApp(container: HTMLElement): void {
   renderThemeToggle();
   renderDeterministicStatus();
   renderDeterministicRows();
+  renderPwnedStatus();
   disposeSystemThemeChangeListener = subscribeToSystemThemeChange(() => {
     if (state.theme.preference !== 'system') {
       return;
@@ -225,8 +273,15 @@ export function renderApp(container: HTMLElement): void {
   function scheduleRefresh(): void {
     state.deterministic.loading = true;
     state.deterministic.error = undefined;
+    pwnedRequestToken += 1;
+    state.pwned.loading = state.input.length > 0;
+    state.pwned.error = undefined;
+    state.pwned.prevalence = 0;
+    state.pwned.sha1Prefix = undefined;
+    state.pwned.ntlmPrefix = undefined;
     renderDeterministicStatus();
     renderDeterministicRows();
+    renderPwnedStatus();
     window.clearTimeout(deterministicTimeout);
     deterministicTimeout = window.setTimeout(() => {
       void refreshDeterministicResults();
@@ -255,6 +310,7 @@ export function renderApp(container: HTMLElement): void {
         results.map((result) => [result.algorithm, result.digest]),
       ) as DeterministicState['results'];
       state.deterministic.error = undefined;
+      void refreshPwnedStatus();
     } catch (error) {
       if (requestToken !== deterministicRequestToken) {
         return;
@@ -262,6 +318,12 @@ export function renderApp(container: HTMLElement): void {
 
       state.deterministic.results = {};
       state.deterministic.error = getErrorMessage(error);
+      state.pwned.loading = false;
+      state.pwned.error = 'Unavailable';
+      state.pwned.prevalence = 0;
+      state.pwned.sha1Prefix = undefined;
+      state.pwned.ntlmPrefix = undefined;
+      renderPwnedStatus();
     } finally {
       if (requestToken === deterministicRequestToken) {
         state.deterministic.loading = false;
@@ -276,6 +338,54 @@ export function renderApp(container: HTMLElement): void {
 
     refs.charCount.textContent = formatCount(state.input.length, 'character');
     refs.byteCount.textContent = formatCount(byteLength, 'UTF-8 byte');
+  }
+
+  function renderPwnedStatus(): void {
+    if (!state.input) {
+      setPwnedTone('neutral');
+      refs.pwnedStatus.textContent = 'Pwned: enter text to check';
+      refs.pwnedSha1Range.hidden = true;
+      refs.pwnedNtlmRange.hidden = true;
+      return;
+    }
+
+    if (state.pwned.sha1Prefix) {
+      refs.pwnedSha1Range.href = `${PWNED_PASSWORDS_RANGE_API}${state.pwned.sha1Prefix}`;
+      refs.pwnedSha1Range.hidden = false;
+    } else {
+      refs.pwnedSha1Range.hidden = true;
+    }
+
+    if (state.pwned.ntlmPrefix) {
+      refs.pwnedNtlmRange.href = `${PWNED_PASSWORDS_RANGE_API}${state.pwned.ntlmPrefix}?mode=ntlm`;
+      refs.pwnedNtlmRange.hidden = false;
+    } else {
+      refs.pwnedNtlmRange.hidden = true;
+    }
+
+    if (state.pwned.loading) {
+      setPwnedTone('info');
+      refs.pwnedStatus.textContent = 'Pwned: checking…';
+      return;
+    }
+
+    if (state.pwned.error) {
+      setPwnedTone('error');
+      refs.pwnedStatus.textContent = 'Pwned: unavailable';
+      return;
+    }
+
+    if (state.pwned.prevalence > 0) {
+      setPwnedTone('danger');
+      refs.pwnedStatus.textContent = `Pwned: seen ${formatCount(
+        state.pwned.prevalence,
+        'time',
+      )}`;
+      return;
+    }
+
+    setPwnedTone('safe');
+    refs.pwnedStatus.textContent = 'Pwned: not found';
   }
 
   function renderThemeToggle(): void {
@@ -380,9 +490,79 @@ export function renderApp(container: HTMLElement): void {
       refs.toast.hidden = true;
     }, 2200);
   }
+
+  function setPwnedTone(tone: PwnedTone): void {
+    refs.pwnedStatus.className = `meta-pill meta-pill--${tone}`;
+  }
+
+  async function refreshPwnedStatus(): Promise<void> {
+    if (!state.input) {
+      state.pwned.loading = false;
+      state.pwned.error = undefined;
+      state.pwned.prevalence = 0;
+      state.pwned.sha1Prefix = undefined;
+      state.pwned.ntlmPrefix = undefined;
+      renderPwnedStatus();
+      return;
+    }
+
+    const sha1Digest = state.deterministic.results.sha1;
+    const ntlmDigest = state.deterministic.results.ntlm;
+
+    if (!sha1Digest || !ntlmDigest) {
+      state.pwned.loading = false;
+      state.pwned.error = 'Unavailable';
+      state.pwned.prevalence = 0;
+      state.pwned.sha1Prefix = undefined;
+      state.pwned.ntlmPrefix = undefined;
+      renderPwnedStatus();
+      return;
+    }
+
+    const requestToken = pwnedRequestToken + 1;
+    pwnedRequestToken = requestToken;
+    state.pwned.loading = true;
+    state.pwned.error = undefined;
+    renderPwnedStatus();
+
+    try {
+      const [sha1Result, ntlmResult] = await Promise.all([
+        fetchPwnedRangeCount(sha1Digest, 'sha1'),
+        fetchPwnedRangeCount(ntlmDigest, 'ntlm'),
+      ]);
+
+      if (requestToken !== pwnedRequestToken) {
+        return;
+      }
+
+      state.pwned.loading = false;
+      state.pwned.error = undefined;
+      state.pwned.prevalence = Math.max(sha1Result.count, ntlmResult.count);
+      state.pwned.sha1Prefix = sha1Result.prefix;
+      state.pwned.ntlmPrefix = ntlmResult.prefix;
+    } catch {
+      if (requestToken !== pwnedRequestToken) {
+        return;
+      }
+
+      state.pwned.loading = false;
+      state.pwned.error = 'Unavailable';
+      state.pwned.prevalence = 0;
+      state.pwned.sha1Prefix = undefined;
+      state.pwned.ntlmPrefix = undefined;
+    }
+
+    renderPwnedStatus();
+  }
 }
 
 type NoticeTone = 'info' | 'warning' | 'error' | 'success';
+type PwnedTone = 'neutral' | 'info' | 'safe' | 'danger' | 'error';
+
+interface PwnedRangeMatch {
+  count: number;
+  prefix: string;
+}
 
 function createCopyButton(value: string, label: string): HTMLButtonElement {
   const button = document.createElement('button');
@@ -403,6 +583,61 @@ function createNotice(message: string, tone: NoticeTone): HTMLElement {
 
 function formatCount(value: number, noun: string): string {
   return `${value.toLocaleString()} ${noun}${value === 1 ? '' : 's'}`;
+}
+
+async function fetchPwnedRangeCount(
+  digest: string,
+  mode: 'sha1' | 'ntlm',
+): Promise<PwnedRangeMatch> {
+  const normalizedDigest = digest.trim().toUpperCase();
+  const prefix = normalizedDigest.slice(0, 5);
+  const suffix = normalizedDigest.slice(5);
+  const endpoint = `${PWNED_PASSWORDS_RANGE_API}${prefix}${mode === 'ntlm' ? '?mode=ntlm' : ''}`;
+  const response = await fetch(endpoint, {
+    headers: {
+      'Add-Padding': 'true',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Pwned Passwords lookup failed with status ${response.status}.`,
+    );
+  }
+
+  const matches = await response.text();
+
+  return {
+    prefix,
+    count: parsePwnedRangeCount(matches, suffix),
+  };
+}
+
+function parsePwnedRangeCount(rangeResponse: string, expectedSuffix: string): number {
+  const targetSuffix = expectedSuffix.toUpperCase();
+
+  for (const line of rangeResponse.split(/\r?\n/)) {
+    if (!line) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf(':');
+
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const candidateSuffix = line.slice(0, separatorIndex).trim().toUpperCase();
+
+    if (candidateSuffix !== targetSuffix) {
+      continue;
+    }
+
+    const count = Number.parseInt(line.slice(separatorIndex + 1).trim(), 10);
+    return Number.isFinite(count) ? count : 0;
+  }
+
+  return 0;
 }
 
 function getRequiredElement<TElement extends HTMLElement>(

@@ -247,6 +247,50 @@ code {
   font-size: 0.9rem;
 }
 
+.meta-pill--neutral {
+  border-color: var(--border);
+}
+
+.meta-pill--info {
+  border-color: var(--info-border);
+  background: var(--info-background);
+  color: var(--info-text);
+}
+
+.meta-pill--safe {
+  border-color: var(--success-border);
+  background: var(--success-background);
+  color: var(--success-text);
+}
+
+.meta-pill--danger,
+.meta-pill--error {
+  border-color: var(--error-border);
+  background: var(--error-background);
+  color: var(--error-text);
+}
+
+.meta-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: inherit;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.meta-link:hover {
+  background: var(--surface-hover);
+}
+
+.meta-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .results-list {
   margin-top: 1rem;
   border-top: 1px solid var(--border);
