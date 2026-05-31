@@ -32,3 +32,11 @@ The workflow uses:
 - `hashes.stebet.net` is the production custom domain. Because `stebet.net` is
   managed in the same Cloudflare account, DNS can be managed from the Pages
   project.
+
+## Development checks
+
+- Use `pnpm` to install and manage dependencies.
+- Before pushing changes, run:
+  - `pnpm typecheck`
+  - `pnpm test`
+  - `pnpm build`
