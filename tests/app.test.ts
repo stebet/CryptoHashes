@@ -158,6 +158,19 @@ describe('renderApp', () => {
       'href',
       'https://api.pwnedpasswords.com/range/8846F?mode=ntlm',
     );
+    const pwnedFetchCalls = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter(([request]) =>
+        String(request).startsWith('https://api.pwnedpasswords.com/range/'),
+      );
+
+    expect(pwnedFetchCalls).toContainEqual([
+      'https://api.pwnedpasswords.com/range/5BAA6',
+    ]);
+    expect(pwnedFetchCalls).toContainEqual([
+      'https://api.pwnedpasswords.com/range/8846F?mode=ntlm',
+    ]);
+    expect(pwnedFetchCalls.every((call) => call.length === 1)).toBe(true);
   });
 });
 

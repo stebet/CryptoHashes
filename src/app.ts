@@ -598,11 +598,7 @@ async function fetchPwnedRangeCount(
   const prefix = normalizedDigest.slice(0, 5);
   const suffix = normalizedDigest.slice(5);
   const endpoint = `${PWNED_PASSWORDS_RANGE_API}${prefix}${mode === 'ntlm' ? '?mode=ntlm' : ''}`;
-  const response = await fetch(endpoint, {
-    headers: {
-      'Add-Padding': 'true',
-    },
-  });
+  const response = await fetch(endpoint);
 
   if (!response.ok) {
     throw new Error(
