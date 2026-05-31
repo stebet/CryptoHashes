@@ -158,6 +158,12 @@ describe('renderApp', () => {
       'href',
       'https://api.pwnedpasswords.com/range/8846F?mode=ntlm',
     );
+    expect(vi.mocked(globalThis.fetch).mock.calls).toContainEqual([
+      'https://api.pwnedpasswords.com/range/5BAA6',
+    ]);
+    expect(vi.mocked(globalThis.fetch).mock.calls).toContainEqual([
+      'https://api.pwnedpasswords.com/range/8846F?mode=ntlm',
+    ]);
   });
 });
 
