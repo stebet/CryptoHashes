@@ -96,6 +96,37 @@ export function renderApp(container: HTMLElement): void {
       <div id="deterministic-status" class="stack-sm" aria-live="polite"></div>
       <section id="deterministic-results" class="results-list" aria-label="Deterministic hashes"></section>
 
+      <footer class="app-footer" aria-label="External links">
+        <a
+          class="icon-link"
+          href="https://x.com/stebets"
+          target="_blank"
+          rel="noreferrer noopener"
+          aria-label="X profile"
+          title="X @stebets"
+        >
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path
+              d="M18.24 2h3.31l-7.23 8.27L23 22h-6.74l-5.28-6.9L4.95 22H1.64l7.73-8.84L1 2h6.91l4.77 6.29L18.24 2Zm-1.16 18h1.84L6.91 3.9H4.94l12.14 16.1Z"
+            ></path>
+          </svg>
+        </a>
+        <a
+          class="icon-link"
+          href="https://github.com/stebet/CryptoHashes"
+          target="_blank"
+          rel="noreferrer noopener"
+          aria-label="GitHub repository"
+          title="GitHub repository"
+        >
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path
+              d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.5 0-.24-.01-1.03-.01-1.87-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.5-1.11-1.5-.9-.64.07-.63.07-.63 1 .07 1.52 1.04 1.52 1.04.88 1.56 2.31 1.11 2.87.84.09-.66.35-1.11.64-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.7.12 2.5.36 1.9-1.33 2.74-1.05 2.74-1.05.56 1.42.21 2.47.11 2.73.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.06.36.31.69.92.69 1.86 0 1.34-.01 2.42-.01 2.75 0 .27.18.6.69.5A10.13 10.13 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z"
+            ></path>
+          </svg>
+        </a>
+      </footer>
+
       <div id="toast" class="toast" hidden aria-live="polite"></div>
     </main>
   `;
