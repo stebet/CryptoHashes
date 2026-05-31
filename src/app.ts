@@ -613,7 +613,10 @@ async function fetchPwnedRangeCount(
   };
 }
 
-function parsePwnedRangeCount(rangeResponse: string, expectedSuffix: string): number {
+function parsePwnedRangeCount(
+  rangeResponse: string,
+  expectedSuffix: string,
+): number {
   const targetSuffix = expectedSuffix.toUpperCase();
 
   for (const line of rangeResponse.split(/\r?\n/)) {

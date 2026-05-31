@@ -116,7 +116,8 @@ describe('renderApp', () => {
       async ({ algorithm }) => ({
         kind: 'deterministic',
         algorithm,
-        digest: deterministicDigests[algorithm],
+        digest:
+          deterministicDigests[algorithm as keyof typeof deterministicDigests],
         encoding: 'hex',
         warnings: [],
       }),
@@ -164,8 +165,7 @@ const deterministicDigests = {
   md5: '5f4dcc3b5aa765d61d8327deb882cf99',
   ntlm: '8846f7eaee8fb117ad06bdd830b7586c',
   sha1: '5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8',
-  sha256:
-    '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
+  sha256: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
   sha512:
     'b109f3bbbc244eb82441917ed06d618b9008dd09b3befd1b5e07394c706a8bb9' +
     '80b1d7785e5976ec049b46df5f1326af5a2ea6d103fd07c95385ffab0cacbc86',
