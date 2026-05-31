@@ -32,3 +32,13 @@ The workflow uses:
 - `hashes.stebet.net` is the production custom domain. Because `stebet.net` is
   managed in the same Cloudflare account, DNS can be managed from the Pages
   project.
+
+## Development checks
+
+- Use `pnpm` to install and manage dependencies.
+- Before pushing changes, run:
+  - `pnpm typecheck`
+  - `pnpm test`
+  - `pnpm build`
+- Keep `tsconfig.json` configured for React + TypeScript (`"jsx": "react-jsx"`
+  and Node typings in `"types"`/`"typeRoots"`).

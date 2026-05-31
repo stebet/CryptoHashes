@@ -21,13 +21,20 @@
     "deploy": "pnpm pages:deploy"
   },
   "dependencies": {
-    "hash-wasm": "4.12.0"
+    "hash-wasm": "4.12.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "14.6.1",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.7",
     "jsdom": "29.1.1",
     "typescript": "6.0.3",
