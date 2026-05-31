@@ -30,6 +30,10 @@ describe('renderApp', () => {
         warnings: [],
       }),
     );
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('', { status: 200 }),
+    );
   });
 
   it('uses the system theme by default and follows system theme changes', async () => {
@@ -106,7 +110,66 @@ describe('renderApp', () => {
       screen.getByRole('link', { name: 'GitHub repository' }),
     ).toHaveAttribute('href', 'https://github.com/stebet/CryptoHashes');
   });
+
+  it('shows pwned prevalence and range links', async () => {
+    engineMocks.generateDeterministicHash.mockImplementation(
+      async ({ algorithm }) => ({
+        kind: 'deterministic',
+        algorithm,
+        digest:
+          deterministicDigests[algorithm as keyof typeof deterministicDigests],
+        encoding: 'hex',
+        warnings: [],
+      }),
+    );
+
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('?mode=ntlm')) {
+        return new Response(
+          '7EAEE8FB117AD06BDD830B7586C:1200\nAAAAAAAAAAAAAAAAAAAAAAAAAAA:2',
+          {
+            status: 200,
+          },
+        );
+      }
+
+      return new Response(
+        '1E4C9B93F3F0682250B6CF8331B7EE68FD8:26230667\nBBBBBBBBBBBBBBBBBBBBBBBBBBB:1',
+        {
+          status: 200,
+        },
+      );
+    });
+
+    const { user, input } = renderWorkspace();
+
+    await user.type(input, 'password');
+
+    expect(
+      await screen.findByText('Pwned: seen 26,230,667 times'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'SHA1 range' })).toHaveAttribute(
+      'href',
+      'https://api.pwnedpasswords.com/range/5BAA6',
+    );
+    expect(screen.getByRole('link', { name: 'NTLM range' })).toHaveAttribute(
+      'href',
+      'https://api.pwnedpasswords.com/range/8846F?mode=ntlm',
+    );
+  });
 });
+
+const deterministicDigests = {
+  md5: '5f4dcc3b5aa765d61d8327deb882cf99',
+  ntlm: '8846f7eaee8fb117ad06bdd830b7586c',
+  sha1: '5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8',
+  sha256: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
+  sha512:
+    'b109f3bbbc244eb82441917ed06d618b9008dd09b3befd1b5e07394c706a8bb9' +
+    '80b1d7785e5976ec049b46df5f1326af5a2ea6d103fd07c95385ffab0cacbc86',
+} as const;
 
 function renderWorkspace() {
   document.body.innerHTML = '<div id="app"></div>';
